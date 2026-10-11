@@ -1,39 +1,64 @@
-# Student Pass/Fail Predictor
+# ScholarPath: Student Pass/Fail Predictor
 
-A small web app that estimates whether a secondary-school student is likely to **pass or fail** a course, built with **scikit-learn** and **FastAPI**.
+An end-to-end machine learning project: from data exploration to a trained model served through a **FastAPI** REST API and a simple web interface.
 
-The user fills in a form with background information about a student (family, study habits, free time, absences, and the first-period grade). The app returns a Pass/Fail prediction together with a probability.
+Given background information about a student (family, study habits, lifestyle, absences and the **first-period grade G1**), the app predicts whether the student is likely to **pass or fail** the course, together with a probability.
 
-## How it works
+> This is a learning project and a decision-support demo, not a tool for real decisions about students.
 
-- **Data:** [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance) (Mathematics course, 395 students).
-- **Target:** `Passing Status` = 1 if the final grade `G3 >= 10`, otherwise 0 (about 67% pass / 33% fail).
-- **Features:** 31 inputs (demographics, family, school, lifestyle, absences) plus the first-period grade `G1`.
-- **Why `G1` is included but `G2` is not:** `G2` is too close to the final grade and makes prediction almost trivial. Using only `G1` keeps this an *early risk estimate* that could be used early in the term.
-- **Preprocessing:** `OneHotEncoder` for categorical columns, `StandardScaler` for the final feature matrix.
-- **Model:** Logistic Regression, chosen after comparing 9 classifiers with 5-fold stratified cross-validation (metric: F1 score of the *fail* class).
+## Project overview
 
-### Key findings
-
-| Scenario | What happened |
+| | |
 |---|---|
-| No previous grades | Accuracy about 0.68, barely above the 0.67 baseline. Background data alone is a weak predictor. |
-| With `G1` | Accuracy about 0.73-0.80 and much better detection of failing students. |
-| 5-fold CV (with `G1`) | Logistic Regression had the best and most stable result (mean F1 of the fail class about 0.76). |
+| **Data** | [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance) (Cortez & Silva, 2008), Mathematics course, 395 students from two Portuguese schools (GP / MS). Downloaded from Kaggle. |
+| **Target** | `Passing Status` = 1 if the final grade `G3 >= 10`, else 0 (265 pass / 130 fail) |
+| **Features** | 31 inputs: demographics, family, school, lifestyle, absences, plus the first-period grade `G1` |
+| **Excluded** | `G3` (it defines the target) and `G2` (see below) |
+| **Final model** | Logistic Regression (`class_weight="balanced"`), with One-Hot Encoding and Standard Scaling |
+| **Serving** | FastAPI + Jinja2 templates |
 
-The test set is small (79 students, about 26 failing), so single-split results are noisy. Cross-validation was used to compare models.
+## Key decisions and findings
+
+**1. Avoiding target leakage.**
+`G1`, `G2` and `G3` are highly correlated. With `G1` and `G2` the models looked excellent (regression R² of about 0.81), but that mostly reflects "previous grades predict the final grade". I removed `G2` and `G3` so the model works as an **early risk estimate** that only needs information available at the start of the term.
+
+**2. Regression did not work well, so I reframed the problem.**
+Without previous grades, the best regression model reached only R² of about 0.26 in 5-fold cross-validation. Predicting *pass/fail* is a more realistic and more useful question than predicting the exact grade.
+
+**3. The first-period grade matters a lot.**
+
+| Features | Accuracy | Recall (fail class) |
+|---|---|---|
+| No previous grades | about 0.68 (baseline is 0.67) | about 0.50 |
+| With `G1` | about 0.73-0.80 | about 0.69-0.77 |
+
+**4. Model selection used cross-validation, not a single split.**
+The test set has only 79 students (26 failing), so one student changes recall by about 4 points and single-split rankings are noisy. I compared 9 classifiers with 5-fold stratified cross-validation, using the F1 score of the **fail class** as the metric. Logistic Regression was the best and most stable (mean F1 of about 0.76, std of about 0.03).
+
+**5. Hyperparameter tuning (GridSearchCV).**
+Tuning searched `penalty`, `C` and `class_weight`. The best setting was `C=1.0`, `l2` and `class_weight="balanced"`, so the main effect came from class weighting:
+
+| Model | Accuracy | Fail-class recall | Fail-class F1 |
+|---|---|---|---|
+| Default Logistic Regression | 0.759 | 0.69 (18/26) | 0.65 |
+| **Balanced Logistic Regression (final)** | 0.734 | **0.73 (19/26)** | 0.64 |
+
+Accuracy dropped slightly (2 students) but more failing students are caught, which matches the goal of the tool. Overall, tuning did not change the model dramatically.
 
 ## Project structure
 
 ```
 .
-├── app.py               # FastAPI application
-├── student_model.pkl    # Saved model + encoder + scaler
-├── model_test.py        # Quick script to test the saved model
-├── testdatascaled.csv   # Scaled test data used by model_test.py
-├── notebooks/           # EDA and model training notebooks
-├── static/              # CSS / JS
-├── templates/           # HTML templates (index.html)
+├── app.py                 # FastAPI application
+├── student_model.pkl      # Saved model + encoder + scaler
+├── model_test.py          # Quick script to test the saved model
+├── testdatascaled.csv     # Scaled test data used by model_test.py
+├── notebooks/
+│   ├── 01_exploratory_data_analysis.ipynb   # EDA, regression and classification experiments, tuning
+│   ├── 02_model_training_pipeline.ipynb     # Final training and model export
+│   └── student_data.csv                     # Dataset
+├── static/                # CSS / JS
+├── templates/             # HTML templates
 └── requirements.txt
 ```
 
@@ -56,8 +81,7 @@ pip install -r requirements.txt
 uvicorn app:app --reload
 ```
 
-Then open <http://127.0.0.1:8000> in your browser.
-Interactive API docs are available at <http://127.0.0.1:8000/docs>.
+Open <http://127.0.0.1:8000> for the web interface, or <http://127.0.0.1:8000/docs> for the interactive API docs.
 
 > **Note:** `student_model.pkl` was saved with **scikit-learn 1.7.2**. If you see version warnings or errors, install that exact version: `pip install scikit-learn==1.7.2`.
 
@@ -65,7 +89,7 @@ Interactive API docs are available at <http://127.0.0.1:8000/docs>.
 
 ### `POST /predict`
 
-Takes a JSON body with the 31 student features and returns:
+Send a JSON body with the 31 student features. Example response:
 
 ```json
 {
@@ -76,11 +100,15 @@ Takes a JSON body with the 31 student features and returns:
 }
 ```
 
+`probability` is the model's confidence in the predicted class.
+
 ## Limitations
 
-- Small dataset (395 students) from two Portuguese schools, so the model may not generalize to other schools or countries.
-- Predictions are statistical estimates, not a judgment about any individual student. It should not be used for real decisions about students.
+- Small dataset (395 students, 79 in the test set), so results have high variance.
+- Data comes from two Portuguese schools and may not generalize to other schools or countries.
+- The model needs the first-period grade `G1`. Without it, background features alone predict poorly.
+- `class_weight="balanced"` shifts probabilities toward the "fail" class, so probabilities are not calibrated.
 
 ## Tech stack
 
-Python, pandas, scikit-learn, FastAPI, Uvicorn, Jinja2
+Python, pandas, NumPy, scikit-learn, Matplotlib, Seaborn, FastAPI, Uvicorn, Jinja2
