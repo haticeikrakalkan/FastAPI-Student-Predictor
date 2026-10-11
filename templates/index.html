@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScholarPath — Student Pass Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="#top">ScholarPath</a>
+    <nav>
+      <a href="#about">About</a>
+      <a href="#predictor">Predictor</a>
+      <a href="#guide">Grade scale</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <p class="eyebrow">Machine learning for education</p>
+      <h1>Predict whether a student is likely to pass the course.</h1>
+      <p class="lede">
+        ScholarPath uses a logistic regression model trained on the UCI Student Performance dataset.
+        It estimates pass or fail from school, family, study habits, and first-period grade (G1).
+      </p>
+      <a class="btn primary" href="#predictor">Open the predictor</a>
+    </section>
+
+    <section id="about" class="about">
+      <article>
+        <h2>What this tool does</h2>
+        <p>
+          Enter student background and first-period grade (G1). The model returns Pass or Fail
+          (typically G3 ≥ 10). It is a decision-support tool, not a substitute for teacher judgment.
+        </p>
+      </article>
+      <ul class="facts">
+        <li><strong>Target</strong> Pass / Fail classification</li>
+        <li><strong>Input</strong> 31 features including G1</li>
+        <li><strong>Data</strong> Portuguese secondary students (GP / MS)</li>
+      </ul>
+    </section>
+
+    <section id="predictor" class="predictor">
+      <div class="predictor-head">
+        <h2>Pass / fail predictor</h2>
+        <p>Fill every field, then run the model. Required ranges match the original dataset.</p>
+      </div>
+
+      <form id="predict-form">
+        <fieldset>
+          <legend>School &amp; student</legend>
+          <div class="grid">
+            <label>School
+              <select name="school" required>
+                <option value="GP">Gabriel Pereira (GP)</option>
+                <option value="MS">Mousinho da Silveira (MS)</option>
+              </select>
+            </label>
+            <label>Sex
+              <select name="sex" required>
+                <option value="F">Female</option>
+                <option value="M">Male</option>
+              </select>
+            </label>
+            <label>Age (15–22)
+              <input type="number" name="age" min="15" max="22" value="17" required>
+            </label>
+            <label>Home address
+              <select name="address" required>
+                <option value="U">Urban</option>
+                <option value="R">Rural</option>
+              </select>
+            </label>
+            <label>Family size
+              <select name="famsize" required>
+                <option value="GT3">Greater than 3</option>
+                <option value="LE3">3 or fewer</option>
+              </select>
+            </label>
+            <label>Parent cohabitation
+              <select name="Pstatus" required>
+                <option value="T">Together</option>
+                <option value="A">Apart</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Family background</legend>
+          <div class="grid">
+            <label>Mother’s education
+              <select name="Medu" required>
+                <option value="0">None</option>
+                <option value="1">Primary (4th grade)</option>
+                <option value="2">5th–9th grade</option>
+                <option value="3">Secondary</option>
+                <option value="4" selected>Higher education</option>
+              </select>
+            </label>
+            <label>Father’s education
+              <select name="Fedu" required>
+                <option value="0">None</option>
+                <option value="1">Primary (4th grade)</option>
+                <option value="2">5th–9th grade</option>
+                <option value="3">Secondary</option>
+                <option value="4" selected>Higher education</option>
+              </select>
+            </label>
+            <label>Mother’s job
+              <select name="Mjob" required>
+                <option value="teacher">Teacher</option>
+                <option value="health">Health care</option>
+                <option value="services">Civil services</option>
+                <option value="at_home">At home</option>
+                <option value="other" selected>Other</option>
+              </select>
+            </label>
+            <label>Father’s job
+              <select name="Fjob" required>
+                <option value="teacher">Teacher</option>
+                <option value="health">Health care</option>
+                <option value="services">Civil services</option>
+                <option value="at_home">At home</option>
+                <option value="other" selected>Other</option>
+              </select>
+            </label>
+            <label>Reason for school choice
+              <select name="reason" required>
+                <option value="home">Close to home</option>
+                <option value="reputation">School reputation</option>
+                <option value="course" selected>Course preference</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>Guardian
+              <select name="guardian" required>
+                <option value="mother" selected>Mother</option>
+                <option value="father">Father</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Study &amp; support</legend>
+          <div class="grid">
+            <label>Travel time
+              <select name="traveltime" required>
+                <option value="1">&lt; 15 min</option>
+                <option value="2">15–30 min</option>
+                <option value="3">30–60 min</option>
+                <option value="4">&gt; 60 min</option>
+              </select>
+            </label>
+            <label>Weekly study time
+              <select name="studytime" required>
+                <option value="1">&lt; 2 hours</option>
+                <option value="2" selected>2–5 hours</option>
+                <option value="3">5–10 hours</option>
+                <option value="4">&gt; 10 hours</option>
+              </select>
+            </label>
+            <label>Past class failures (0–3)
+              <input type="number" name="failures" min="0" max="3" value="0" required>
+            </label>
+            <label>Extra school support
+              <select name="schoolsup" required>
+                <option value="yes">Yes</option>
+                <option value="no" selected>No</option>
+              </select>
+            </label>
+            <label>Family educational support
+              <select name="famsup" required>
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            <label>Paid extra classes
+              <select name="paid" required>
+                <option value="yes">Yes</option>
+                <option value="no" selected>No</option>
+              </select>
+            </label>
+            <label>Extra-curricular activities
+              <select name="activities" required>
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            <label>Attended nursery
+              <select name="nursery" required>
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            <label>Wants higher education
+              <select name="higher" required>
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            <label>Internet at home
+              <select name="internet" required>
+                <option value="yes" selected>Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            <label>In a romantic relationship
+              <select name="romantic" required>
+                <option value="yes">Yes</option>
+                <option value="no" selected>No</option>
+              </select>
+            </label>
+            <label>Absences (0–93)
+              <input type="number" name="absences" min="0" max="93" value="4" required>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Lifestyle &amp; first-period grade</legend>
+          <div class="grid">
+            <label>Family relationship quality (1–5)
+              <input type="number" name="famrel" min="1" max="5" value="4" required>
+            </label>
+            <label>Free time after school (1–5)
+              <input type="number" name="freetime" min="1" max="5" value="3" required>
+            </label>
+            <label>Going out with friends (1–5)
+              <input type="number" name="goout" min="1" max="5" value="3" required>
+            </label>
+            <label>Workday alcohol use (1–5)
+              <input type="number" name="Dalc" min="1" max="5" value="1" required>
+            </label>
+            <label>Weekend alcohol use (1–5)
+              <input type="number" name="Walc" min="1" max="5" value="2" required>
+            </label>
+            <label>Current health (1–5)
+              <input type="number" name="health" min="1" max="5" value="4" required>
+            </label>
+            <label>First period grade G1 (0–20)
+              <input type="number" name="G1" min="0" max="20" value="12" required>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="btn primary" id="submit-btn">Predict outcome</button>
+          <button type="reset" class="btn ghost">Reset</button>
+        </div>
+      </form>
+
+      <aside id="result" class="result" hidden>
+        <p class="result-label">Predicted outcome</p>
+        <p class="result-score" id="result-score">—</p>
+        <p class="result-note" id="result-note"></p>
+      </aside>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <section id="guide" class="guide">
+      <h2>How to read the result</h2>
+      <div class="scale">
+        <div><span>Pass</span> Model expects a final grade of 10 or higher</div>
+        <div><span>Fail</span> Model expects a final grade below 10</div>
+        <div><span>G1</span> First-period grade is a strong signal</div>
+        <div><span>Caution</span> Predictions are estimates, not official results</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>ScholarPath · Student Performance classifier · Pass means a predicted final grade of 10 or higher on the 0–20 scale.</p>
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>
