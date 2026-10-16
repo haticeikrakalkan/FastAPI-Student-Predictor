@@ -10,4 +10,4 @@ def test_model():
     prediction = model.predict(X_test_scaled)
 
     assert len(prediction) == len(X_test_scaled)
-    assert set(prediction) <= {5}
+    assert set(prediction) <= {0,1}
