@@ -1,10 +1,18 @@
 # ScholarPath: Student Pass/Fail Predictor
 
-An end-to-end machine learning project: from data exploration to a trained model served through a **FastAPI** REST API and a simple web interface.
+![CI](https://github.com/haticeikrakalkan/FastAPI-Student-Predictor/actions/workflows/ci.yml/badge.svg)
+
+An end-to-end machine learning project: from data exploration to a trained model served through a **FastAPI** REST API and a simple web interface, packaged with **Docker**, tested with **pytest**, checked by **GitHub Actions** and deployed on **Render**.
 
 Given background information about a student (family, study habits, lifestyle, absences and the **first-period grade G1**), the app predicts whether the student is likely to **pass or fail** the course, together with a probability.
 
 > This is a learning project and a decision-support demo, not a tool for real decisions about students.
+
+## Live demo
+
+**[Open the app](https://fastapi-student-predictor.onrender.com)** | [API docs](https://fastapi-student-predictor.onrender.com/docs)
+
+> The demo runs on a free hosting plan. If nobody has used it for a while it goes to sleep, so the first load can take about a minute.
 
 ## Project overview
 
@@ -16,6 +24,7 @@ Given background information about a student (family, study habits, lifestyle, a
 | **Excluded** | `G3` (it defines the target) and `G2` (see below) |
 | **Final model** | Logistic Regression (`class_weight="balanced"`), with One-Hot Encoding and Standard Scaling |
 | **Serving** | FastAPI + Jinja2 templates |
+| **MLOps** | Docker, pytest, GitHub Actions (CI), MLflow experiment tracking, Render deployment |
 
 ## Key decisions and findings
 
@@ -52,17 +61,25 @@ Accuracy dropped slightly (2 students) but more failing students are caught, whi
 ├── app.py                 # FastAPI application
 ├── student_model.pkl      # Saved model + encoder + scaler
 ├── model_test.py          # Quick script to test the saved model
-├── testdatascaled.csv     # Scaled test data used by model_test.py
+├── test_model.py          # pytest test for the saved model
+├── testdatascaled.csv     # Scaled test data used by the tests
+├── Dockerfile             # Container image definition
+├── .dockerignore          # Files excluded from the Docker image
+├── .github/
+│   └── workflows/
+│       └── ci.yml         # GitHub Actions: runs pytest on every push to main
 ├── notebooks/
 │   ├── 01_exploratory_data_analysis.ipynb   # EDA, regression and classification experiments, tuning
 │   ├── 02_model_training_pipeline.ipynb     # Final training and model export
 │   └── student_data.csv                     # Dataset
 ├── static/                # CSS / JS
 ├── templates/             # HTML templates
-└── requirements.txt
+└── requirements.txt       # Pinned dependencies
 ```
 
 ## Run locally
+
+Python 3.13 is recommended: it is the version used for training, in Docker and in CI.
 
 ```bash
 # 1. Clone the repository
@@ -83,7 +100,32 @@ uvicorn app:app --reload
 
 Open <http://127.0.0.1:8000> for the web interface, or <http://127.0.0.1:8000/docs> for the interactive API docs.
 
-> **Note:** `student_model.pkl` was saved with **scikit-learn 1.7.2**. If you see version warnings or errors, install that exact version: `pip install scikit-learn==1.7.2`.
+> **Note:** `student_model.pkl` was saved with **scikit-learn 1.7.2**. `requirements.txt` pins this exact version (and the matching pandas and NumPy versions), so the model loads without version warnings.
+
+## Run with Docker
+
+```bash
+docker build -t student-predictor .
+docker run -p 8000:8000 student-predictor
+```
+
+Then open <http://localhost:8000>. The container listens on the port given by the `PORT` environment variable (default `8000`), which is how the hosting platform assigns its own port.
+
+## Tests and CI
+
+The test in `test_model.py` loads the saved model, predicts on the scaled test data and checks that there is one prediction per row and that every prediction is 0 or 1.
+
+```bash
+pip install pytest
+pytest
+```
+
+The same test runs automatically on GitHub Actions on every push to `main` (see `.github/workflows/ci.yml`).
+
+## Experiment tracking and deployment
+
+- **MLflow:** training runs with different `C` values were logged locally (parameters and accuracy) to compare them. The tracking database is not part of this repository.
+- **Deployment:** the Docker image is built from this repository and deployed on Render (free plan), which redeploys on every push to `main`.
 
 ## API
 
@@ -108,7 +150,8 @@ Send a JSON body with the 31 student features. Example response:
 - Data comes from two Portuguese schools and may not generalize to other schools or countries.
 - The model needs the first-period grade `G1`. Without it, background features alone predict poorly.
 - `class_weight="balanced"` shifts probabilities toward the "fail" class, so probabilities are not calibrated.
+- The live demo is on a free plan, so it sleeps when idle and the first request is slow.
 
 ## Tech stack
 
-Python, pandas, NumPy, scikit-learn, Matplotlib, Seaborn, FastAPI, Uvicorn, Jinja2
+Python, pandas, NumPy, scikit-learn, Matplotlib, Seaborn, FastAPI, Uvicorn, Jinja2, Docker, pytest, GitHub Actions, MLflow, Render
